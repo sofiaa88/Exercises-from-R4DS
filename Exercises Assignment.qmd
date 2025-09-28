@@ -1,0 +1,197 @@
+---
+title: "Exercises from R4DS"
+name: "Yuan Wang"
+format: html
+editor: visual
+---
+
+```{r}
+#library(nycflights13)
+#library(tidyverse)
+#library(dplyr)
+```
+
+```{r}
+flights <- nycflights13::flights
+```
+
+3.2.5 Exercises 1. In a single pipeline for each condition, find all flights that meet the condition:
+
+a)  Had an arrival delay of two or more hours
+
+```{r}
+delayed_flights <- flights[flights$arr_delay > 120,]
+head(delayed_flights)
+```
+
+b)  Flew to Houston (IAH or HOU)
+
+```{r}
+houston_flights <- flights[flights$dest == "HOU"| flights$dest == "IAH",]
+head(houston_flights)
+```
+
+c)  Were operated by United, American, or Delta
+
+```{r}
+operated_airline <- flights[flights$carrier == "AA"| 
+                              flights$carrier == "DL"|
+                              flights$carrier =="UA",]
+head(operated_airline)
+```
+
+d)  Departed in summer (July, August, and September)
+
+```{r}
+flight_season <- flights[flights$month == 7|
+                           flights$month == 8|
+                           flights$month == 9,]
+head(flight_season)
+```
+
+e)  Arrived more than two hours late but didn’t leave late
+
+```{r}
+late_arrival <- flights %>%
+  filter(arr_delay > 120, dep_delay <= 0)
+head(late_arrival)
+```
+
+f)  Were delayed by at least an hour, but made up over 30 minutes in flight
+
+```{r}
+made_up_flights <- flights %>%
+  filter(dep_delay >= 60, arr_delay <= -30)
+head(made_up_flights) 
+```
+
+4.  Was there a flight on every day of 2013?
+
+```{r}
+everyday_flights <- flights %>%
+  filter(year== 2013) %>%
+  count(month, day)
+
+nrow(everyday_flights)
+```
+
+5.  Which flights traveled the farthest distance? Which traveled the least distance?
+
+```{r}
+furthest_flight <- flights[which.max(flights$distance),]
+furthest_flight
+  
+shortest_flight <- flights[which.min(flights$distance),]
+shortest_flight
+```
+
+3.3.5 Exercises 1. Compare dep_time, sched_dep_time, and dep_delay. How would you expect those three numbers to be related?
+
+Answer: We can understand the relationship between these variable through the formula (sched_dep_time) + (dep_delay) = (dep_time)
+
+```{r}
+flights2 <- flights[,c("dep_time", "sched_dep_time", "dep_delay")]
+head(flights2)
+```
+
+4.  What does the any_of() function do? Why might it be helpful in conjunction with this vector?
+
+Answer: any_of() is used to select specified columns without invoking an error message is the column doesn't exist. It might be helpful in conjunction with this vector because it will select the variables that do exist.
+
+```{r}
+variables <- c("year", "month", "day", "dep_delay", "arr_delay")
+```
+
+3.5.7 Exercises 1. Which carrier has the worst average delays? Challenge: can you disentangle the effects of bad airports vs. bad carriers? Why/why not? (Hint: think about flights \|\> group_by(carrier, dest) \|\> summarize(n()))
+
+Answer: To pinpoint whether delays are an effect of bad airport or bad carriers presents some difficulty because there is the possibility that the combination of the two causes the worst delays. If we filter out the average delay of each airport and carrier combination, compare it to airport and carrier separately, we could get a better understanding of their relationships.
+
+2.  Find the flights that are most delayed upon departure from each destination.
+
+```{r}
+most_delayed <- flights[,c("dest", "dep_delay")] %>% 
+  group_by(dest) %>% 
+  summarize(avg_dep_delay = mean(dep_delay, na.rm = TRUE)) %>%
+  arrange(desc(avg_dep_delay))
+most_delayed
+```
+
+4.  What happens if you supply a negative n to slice_min() and friends?
+
+Answer: It eliminates the specified number of rows with the smallest values and then returns the remaining rows.
+
+6.  Suppose we have the following tiny data frame:
+
+```{r}
+df <- tibble(
+  x = 1:5,
+  y = c("a", "b", "a", "a", "b"),
+  z = c("K", "K", "L", "L", "K")
+)
+head(df)
+```
+
+a)  Write down what you think the output will look like, then check if you were correct, and describe what group_by() does.
+
+Answer: group_by() will group the variables depending on the column we specify. For example, if we specify group_by(y), the groups will be formed based on the distinct values in column y. Based off of this function, we see no visible changes.
+
+```{r}
+df |> group_by(y)
+```
+
+b)  Write down what you think the output will look like, then check if you were correct, and describe what arrange() does. Also, comment on how it’s different from the group_by() in part (a).
+
+Asnwer: My guess is that the output will look like the data has been arranged in a specific order. For example, ascending or descending order. I was correct. The function arranged the y column in alphabetical order. This looks different from the group_by function because group_by() did not cause a visible change in the order of the values in the y column.
+
+```{r}
+df |>
+  arrange(y)
+```
+
+c)  Write down what you think the output will look like, then check if you were correct, and describe what the pipeline does.
+
+Answer: This pipeline groups the values in the y column and then calculates the mean of each corresponding group.
+
+```{r}
+df |>
+  group_by(y) |>
+  summarize(mean_x = mean(x))
+```
+
+d)  Write down what you think the output will look like, then check if you were correct, and describe what the pipeline does. Then, comment on what the message says.
+
+Answer: This pipeline groups the values in column y and z and then calculates the mean of the distinct group combinations. The comment says: "`summarise()` has grouped output by 'y'. You can override using the `.groups`argument."
+
+```{r}
+df |>
+  group_by(y, z) |>
+  summarize(mean_x = mean(x))
+```
+
+e)  Write down what you think the output will look like, then check if you were correct, and describe what the pipeline does. How is the output different from the one in part (d)?
+
+Answer: I think the output will look very similar to the one in part d.
+
+The result does look very similar, but '.group=' takes action after summarizing. This specific function removes all grouping after the summarization step.
+
+```{r}
+df |>
+  group_by(y, z) |>
+  summarize(mean_x = mean(x), .groups = "drop")
+```
+
+f)  Write down what you think the outputs will look like, then check if you were correct, and describe what each pipeline does. How are the outputs of the two pipelines different?
+
+Answer: The first pipeline will show us the groups and the means of each group. The second pipeline will show us a similar output, except the means column will be added into the dataframe. Therefore, the second output will have 4 columns and the first one will have 3.
+
+```{r}
+df |>
+  group_by(y, z) |>
+  summarize(mean_x = mean(x))
+```
+
+```{r}
+df |>
+  group_by(y, z) |>
+  mutate(mean_x = mean(x))
+```
